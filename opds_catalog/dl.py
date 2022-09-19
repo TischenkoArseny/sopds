@@ -6,6 +6,7 @@ import io
 import subprocess
 import lxml.etree as ET
 from re import search
+import logging
 
 from django.http import HttpResponse, Http404
 from django.views.decorators.cache import cache_page
@@ -21,6 +22,11 @@ from constance import config
 from PIL import Image
 
 from opds_catalog.middleware import BasicAuthMiddleware
+
+
+logger = logging.getLogger('')
+logger.setLevel(logging.DEBUG)
+
 
 def getFileName(book):
     if config.SOPDS_TITLE_AS_FILENAME:
@@ -74,6 +80,7 @@ def getFileData(book):
 
     return dio
 
+
 def getFileDataZip(book):
     transname = getFileName(book)
     fo = getFileData(book)
@@ -85,8 +92,8 @@ def getFileDataZip(book):
 
     return dio
 
-def getFileDataConv(book, convert_type):
 
+def getFileDataConv(book, convert_type):
     if book.format != 'fb2':
        return None
 
@@ -95,9 +102,7 @@ def getFileDataConv(book, convert_type):
     if not fo:
         return None
 
-    transname = getFileName(book)
-
-    (n, e) = os.path.splitext(transname)
+    (n, e) = os.path.splitext(book.filename)
     dlfilename = "%s.%s" % (n, convert_type)
 
     if convert_type == 'epub':
@@ -110,13 +115,19 @@ def getFileDataConv(book, convert_type):
 
     tmp_fb2_path = os.path.join(config.SOPDS_TEMP_DIR, book.filename)
     tmp_conv_path = os.path.join(config.SOPDS_TEMP_DIR, dlfilename)
-    fw = open(tmp_fb2_path,'wb')
+
+    try:
+        fw = open(tmp_fb2_path, 'wb')
+    except FileNotFoundError:
+        os.mkdir(config.SOPDS_TEMP_DIR)
+        fw = open(tmp_fb2_path, 'wb')
+
     fw.write(fo.read())
     fw.close()
     fo.close()
 
-    popen_args = ("\"%s\" \"%s\" \"%s\"" % (converter_path, tmp_fb2_path, tmp_conv_path))
-    proc = subprocess.Popen(popen_args, shell=True, stdout=subprocess.PIPE)
+    popen_args = ("%s \"%s\" \"%s\"" % (converter_path, tmp_fb2_path, config.SOPDS_TEMP_DIR))
+    proc = subprocess.Popen(popen_args, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     # У следующий строки 2 функции 1-получение информации по конвертации и 2- ожидание конца конвертации
     # В силу 2й функции ее удаление приведет к ошибке выдачи сконвертированного файла
     out = proc.stdout.readlines()
@@ -136,11 +147,14 @@ def getFileDataConv(book, convert_type):
 
     return dio
 
+
 def getFileDataEpub(book):
     return getFileDataConv(book,'epub')
 
+
 def getFileDataMobi(book):
     return getFileDataConv(book,'mobi')
+
 
 def Download(request, book_id, zip_flag):
     """ Загрузка файла книги """
@@ -223,6 +237,7 @@ def Download(request, book_id, zip_flag):
 
     return response
 
+
 # Новая версия (0.42) процедуры извлечения обложек из файлов книг fb2, epub, mobi
 @cache_page(config.SOPDS_CACHE_TIME)
 def Cover(request, book_id, thumbnail=False):
@@ -279,6 +294,7 @@ def Cover(request, book_id, thumbnail=False):
             raise Http404
 
     return response
+
 
 # Старая версия (до 0.41) процедуры извлечения обложек из файлов книг только fb2
 def Cover0(request, book_id, thumbnail = False):
@@ -338,6 +354,7 @@ def Cover0(request, book_id, thumbnail = False):
             raise Http404
 
     return response
+
 
 def Thumbnail(request, book_id):
     return Cover(request, book_id, True)
@@ -421,6 +438,7 @@ def ConvertFB2(request, book_id, convert_type):
         pass
 
     return response
+
 
 def ReadFB2(request, book_id):
     """ Загрузка книги """
