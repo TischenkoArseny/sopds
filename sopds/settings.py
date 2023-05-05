@@ -88,44 +88,22 @@ WSGI_APPLICATION = 'sopds.wsgi.application'
 
 # Database
 # https://docs.djangoproject.com/en/1.9/ref/settings/#databases
-if os.getenv('MYSQL_DATABASE'):
-    DATABASES = {
-        'default': {
-            'ENGINE': 'django.db.backends.mysql',
-            'HOST': os.getenv('MYSQL_HOST','localhost'),
-            'NAME': os.getenv('MYSQL_DATABASE','sopds'),
-            'USER': os.getenv('MYSQL_USER','sopds'),
-            'PASSWORD' : os.getenv('MYSQL_PASSWORD','sopds'),
-            'OPTIONS' : {
-                'init_command': """
-                    SET default_storage_engine=INNODB; 
-                    SET sql_mode='STRICT_TRANS_TABLES'; 
-                    SET NAMES UTF8 COLLATE utf8_general_ci; 
-                    SET SESSION TRANSACTION ISOLATION LEVEL READ COMMITTED
-                    """
-            }
-        }
+DATABASES = {
+    'default': {
+        'ENGINE': 'django.db.backends.mysql',
+        'NAME': 'sopds',
+        'HOST': 'localhost',
+        'USER': 'sopds',
+        'PASSWORD' : 'sopds',
+        'OPTIONS' : {
+                'init_command': """SET default_storage_engine=INNODB; \
+                                   SET sql_mode='STRICT_TRANS_TABLES'; \
+                                   SET NAMES UTF8 COLLATE utf8_general_ci; \
+                                   SET SESSION TRANSACTION ISOLATION LEVEL READ COMMITTED
+                                """
+}
     }
-elif os.getenv('POSTGRES_DB'):
-    DATABASES = {
-        'default': {
-        'ENGINE': 'django.db.backends.postgresql_psycopg2',
-        'HOST': os.getenv('POSTGRES_HOST','localhost'),
-        'NAME': os.getenv('POSTGRES_DB','sopds'),
-        'USER': os.getenv('POSTGRES_USER','sopds'),
-        'PASSWORD' : os.getenv('POSTGRES_PASSWORD','sopds'),
-        'PORT': '', # Set to empty string for default.
-        }
-    }
-else:
-    DATABASES = {
-        'default': {
-            'ENGINE': 'django.db.backends.sqlite3',
-            'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
-        }         
-    }
-
-
+}
 
 
 #### SOPDS DATABASE SETTINGS FINISH ####
@@ -166,7 +144,10 @@ CACHE_MIDDLEWARE_KEY_PREFIX = "sopds"
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/1.9/howto/static-files/
 STATIC_URL = '/static/'
-STATIC_ROOT = 'static'
+#STATIC_ROOT = 'static'
+STATICFILES_DIRS = (
+    os.path.join(BASE_DIR, "static"),
+)
 
 CONSTANCE_BACKEND = 'constance.backends.database.DatabaseBackend'
 
